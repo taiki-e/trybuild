@@ -11,7 +11,11 @@ pub(crate) enum Update {
 impl Update {
     pub fn env() -> Result<Self> {
         let Some(var) = env::var_os("TRYBUILD") else {
-            return Ok(Update::default());
+            if env::var_os("CI").is_none() {
+                return Ok(Update::Overwrite);
+            } else {
+                return Ok(Update::default());
+            }
         };
 
         match var.as_os_str().to_str() {
