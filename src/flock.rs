@@ -1,4 +1,5 @@
 use crate::error::Result;
+use crate::once_lock::OnceLock;
 use std::fs::{self, File, OpenOptions};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -7,7 +8,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-static LOCK: Mutex<()> = Mutex::new(());
+static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 pub(crate) struct Lock {
     intraprocess_guard: Guard,
@@ -42,7 +43,11 @@ impl Lock {
 
 impl Guard {
     fn acquire() -> Self {
-        Guard::Locked(LOCK.lock().unwrap_or_else(PoisonError::into_inner))
+        Guard::Locked(
+            LOCK.get_or_init(|| Mutex::new(()))
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
+        )
     }
 }
 
@@ -110,8 +115,9 @@ fn create(path: &Path) -> Option<File> {
             },
         };
 
-        let Ok(modified) = metadata.modified() else {
-            return None;
+        let modified = match metadata.modified() {
+            Ok(modified) => modified,
+            Err(_) => return None,
         };
 
         let now = SystemTime::now();

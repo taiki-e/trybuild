@@ -10,7 +10,7 @@ exclude = ["screenshots/*"]
 keywords = ["macros", "testing", "dev-dependencies"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/dtolnay/trybuild"
-rust-version = "1.70"
+rust-version = "1.56"
 
 [features]
 # Experimental: highlight the diff between the expected and actual compiler
@@ -25,7 +25,7 @@ serde = "1.0.194"
 serde_derive = "1.0.194"
 serde_json = "1.0.110"
 termcolor = "1.0.4"
-toml_edit = { version = "0.22", features = ["serde"] }
+toml = "0.5"
 
 [dev-dependencies]
 automod = "1.0.10"
