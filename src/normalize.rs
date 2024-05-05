@@ -26,7 +26,8 @@ macro_rules! normalizations {
         }
 
         impl Normalization {
-            const ALL: &'static [Self] = &[$($name),*];
+            const ALL: [Self; Self::LEN] = [$($name),*];
+            const LEN: usize = 18;
         }
 
         impl Default for Variations {
@@ -85,7 +86,7 @@ pub(crate) fn diagnostics(output: &str, context: Context) -> Variations {
 }
 
 pub(crate) struct Variations {
-    variations: [String; Normalization::ALL.len()],
+    variations: [String; Normalization::LEN],
 }
 
 impl Variations {
@@ -398,9 +399,8 @@ impl<'a> Filter<'a> {
 
         if self.normalization >= StripLongTypeNameFiles {
             let trimmed_line = line.trim_start();
-            let trimmed_line = trimmed_line
-                .strip_prefix("= note: ")
-                .unwrap_or(trimmed_line);
+            let trimmed_line =
+                crate::strip_prefix(trimmed_line, "= note: ").unwrap_or(trimmed_line);
             if trimmed_line.starts_with("the full type name has been written to")
                 || trimmed_line.starts_with("the full name for the type has been written to")
             {
@@ -421,7 +421,10 @@ impl<'a> Filter<'a> {
 }
 
 fn is_ascii_lowercase_hex(s: &str) -> bool {
-    s.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+    s.bytes().all(|b| match b {
+        b'0'..=b'9' | b'a'..=b'f' => true,
+        _ => false,
+    })
 }
 
 // "10 | T: Send,"  ->  "   | T: Send,"
@@ -585,7 +588,7 @@ fn indented_line_kind(line: &str, normalization: Normalization) -> IndentedLineK
     }
 
     let is_space = |b: &u8| *b == b' ';
-    if let Some(rest) = line.strip_prefix("... ") {
+    if let Some(rest) = crate::strip_prefix(line, "... ") {
         let spaces = rest.bytes().take_while(is_space).count();
         return IndentedLineKind::Code(spaces);
     }
