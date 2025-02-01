@@ -7,7 +7,6 @@ use serde_derive::Deserialize;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 use std::{env, fs, iter};
-use target_triple::TARGET;
 
 #[derive(Deserialize)]
 pub(crate) struct Metadata {
@@ -42,11 +41,7 @@ fn cargo(project: &Project) -> Command {
     cmd.env_remove("RUSTFLAGS");
     cmd.env("CARGO_INCREMENTAL", "0");
     cmd.arg("--offline");
-
-    let rustflags = rustflags::toml();
-    cmd.arg(format!("--config=build.rustflags={rustflags}"));
-    cmd.arg(format!("--config=target.{TARGET}.rustflags={rustflags}"));
-
+    cmd.arg(format!("--config=build.rustflags={}", rustflags::toml()));
     cmd
 }
 
@@ -204,6 +199,6 @@ fn target() -> Vec<&'static str> {
     if cfg!(trybuild_no_target) {
         vec![]
     } else {
-        vec!["--target", TARGET]
+        vec!["--target", target_triple::TARGET]
     }
 }
