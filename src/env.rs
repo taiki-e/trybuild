@@ -1,20 +1,28 @@
 use crate::error::{Error, Result};
 use std::env;
 
-#[derive(PartialEq, Default, Debug)]
+#[derive(PartialEq, Debug)]
 pub(crate) enum Update {
-    #[default]
     Wip,
     Overwrite,
 }
 
+impl Default for Update {
+    fn default() -> Self {
+        Update::Wip
+    }
+}
+
 impl Update {
     pub fn env() -> Result<Self> {
-        let Some(var) = env::var_os("TRYBUILD") else {
-            if env::var_os("CI").is_none() {
-                return Ok(Update::Overwrite);
-            } else {
-                return Ok(Update::default());
+        let var = match env::var_os("TRYBUILD") {
+            Some(var) => var,
+            None => {
+                if env::var_os("CI").is_none() {
+                    return Ok(Update::Overwrite);
+                } else {
+                    return Ok(Update::default());
+                }
             }
         };
 

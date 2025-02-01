@@ -278,6 +278,7 @@ mod inherit;
 mod manifest;
 mod message;
 mod normalize;
+mod once_lock;
 mod run;
 mod rustflags;
 

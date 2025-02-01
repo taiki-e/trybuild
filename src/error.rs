@@ -20,8 +20,8 @@ pub(crate) enum Error {
     ReadStderr(io::Error),
     RunFailed,
     ShouldNotHaveCompiled,
-    TomlDe(toml_edit::de::Error),
-    TomlSer(toml_edit::ser::Error),
+    TomlDe(toml::de::Error),
+    TomlSer(toml::ser::Error),
     UpdateVar(OsString),
     WriteStderr(io::Error),
 }
@@ -90,14 +90,14 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<toml_edit::de::Error> for Error {
-    fn from(err: toml_edit::de::Error) -> Self {
+impl From<toml::de::Error> for Error {
+    fn from(err: toml::de::Error) -> Self {
         Error::TomlDe(err)
     }
 }
 
-impl From<toml_edit::ser::Error> for Error {
-    fn from(err: toml_edit::ser::Error) -> Self {
+impl From<toml::ser::Error> for Error {
+    fn from(err: toml::ser::Error) -> Self {
         Error::TomlSer(err)
     }
 }

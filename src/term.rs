@@ -1,5 +1,6 @@
+use crate::once_lock::OnceLock;
 use std::io::{Result, Write};
-use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream as Stream, WriteColor};
 
 static TERM: OnceLock<Mutex<Term>> = OnceLock::new();
