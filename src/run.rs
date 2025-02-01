@@ -188,7 +188,7 @@ impl Runner {
         let config_toml = toml::to_string(&config)?;
 
         fs::create_dir_all(path!(project.dir / ".cargo"))?;
-        fs::write(path!(project.dir / ".cargo" / "config.toml"), config_toml)?;
+        fs::write(path!(project.dir / ".cargo" / "config"), config_toml)?;
         fs::write(path!(project.dir / "Cargo.toml"), manifest_toml)?;
 
         let main_rs = b"\
@@ -258,14 +258,14 @@ impl Runner {
 
         let mut targets = source_manifest.target;
         for target in targets.values_mut() {
-            let dev_dependencies = mem::take(&mut target.dev_dependencies);
+            let dev_dependencies = mem::replace(&mut target.dev_dependencies, Default::default());
             target.dependencies.extend(dev_dependencies);
         }
 
         let mut features = source_manifest.features;
         for (feature, enables) in &mut features {
             enables.retain(|en| {
-                let dep_name = match en.strip_prefix("dep:") {
+                let dep_name = match crate::strip_prefix(en, "dep:") {
                     Some(dep_name) => dep_name,
                     None => return false,
                 };
