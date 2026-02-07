@@ -8,7 +8,6 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 use std::{env, io, iter};
-use target_triple::TARGET;
 
 #[derive(Deserialize)]
 pub(crate) struct Metadata {
@@ -196,6 +195,12 @@ fn features(project: &Project) -> Vec<String> {
         None => vec![],
     }
 }
+
+#[cfg(not(host_os = "windows"))]
+const TARGET: &str = include!(concat!(env!("OUT_DIR"), "/target"));
+
+#[cfg(host_os = "windows")]
+const TARGET: &str = include!(concat!(env!("OUT_DIR"), "\\target"));
 
 fn target() -> Vec<&'static str> {
     // When --target flag is passed, cargo does not pass RUSTFLAGS to rustc when
