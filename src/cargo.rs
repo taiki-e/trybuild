@@ -44,13 +44,10 @@ fn cargo_with_rustflags(project: &Project, extra_rustflags: &[&'static str]) -> 
     let mut cmd = raw_cargo();
     cmd.current_dir(&project.dir);
     cmd.envs(cargo_target_dir(project));
-    cmd.env_remove("RUSTFLAGS");
     cmd.env("CARGO_INCREMENTAL", "0");
     cmd.arg("--offline");
 
-    let rustflags = rustflags::toml(extra_rustflags);
-    cmd.arg(format!("--config=build.rustflags={rustflags}"));
-    cmd.arg(format!("--config=target.{TARGET}.rustflags={rustflags}"));
+    rustflags::set(&mut cmd, TARGET, extra_rustflags);
 
     cmd
 }
