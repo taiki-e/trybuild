@@ -280,6 +280,7 @@ mod inherit;
 mod manifest;
 mod message;
 mod normalize;
+mod once_lock;
 mod run;
 mod rustflags;
 
@@ -341,5 +342,15 @@ impl Drop for TestCases {
         if !thread::panicking() {
             self.runner.borrow_mut().run();
         }
+    }
+}
+
+// str::strip_prefix requires Rust 1.45
+#[must_use]
+fn strip_prefix<'a>(s: &'a str, pat: &str) -> Option<&'a str> {
+    if s.starts_with(pat) {
+        Some(&s[pat.len()..])
+    } else {
+        None
     }
 }

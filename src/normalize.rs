@@ -27,7 +27,8 @@ macro_rules! normalizations {
         }
 
         impl Normalization {
-            const ALL: &'static [Self] = &[$($name),*];
+            const ALL: [Self; Self::LEN] = [$($name),*];
+            const LEN: usize = 25;
         }
 
         impl Default for Variations {
@@ -93,7 +94,7 @@ pub(crate) fn diagnostics(output: &str, context: Context) -> Variations {
 }
 
 pub(crate) struct Variations {
-    variations: [String; Normalization::ALL.len()],
+    variations: [String; Normalization::LEN],
 }
 
 impl Variations {
@@ -305,9 +306,12 @@ impl<'a> Filter<'a> {
                     line.replace_range(indent + 4..pos + 25, "$RUST");
                     other_crate = true;
                 } else if line[indent + 4..].starts_with("/rustc/")
-                    && line
-                        .get(indent + 11..indent + 51)
-                        .is_some_and(is_ascii_lowercase_hex)
+                    && {
+                        match line.get(indent + 11..indent + 51) {
+                            None => false,
+                            Some(x) => is_ascii_lowercase_hex(x),
+                        }
+                    }
                     && line[indent + 51..].starts_with("/library/")
                 {
                     // --> /rustc/c5c7d2b37780dac1092e75f12ab97dd56c30861e/library/std/src/net/ip.rs:83:1
@@ -424,9 +428,8 @@ impl<'a> Filter<'a> {
 
         if self.normalization >= StripLongTypeNameFiles {
             let trimmed_line = line.trim_start();
-            let trimmed_line = trimmed_line
-                .strip_prefix("= note: ")
-                .unwrap_or(trimmed_line);
+            let trimmed_line =
+                crate::strip_prefix(trimmed_line, "= note: ").unwrap_or(trimmed_line);
             if trimmed_line.starts_with("the full type name has been written to")
                 || trimmed_line.starts_with("the full name for the type has been written to")
             {
@@ -473,7 +476,10 @@ impl<'a> Filter<'a> {
 }
 
 fn is_ascii_lowercase_hex(s: &str) -> bool {
-    s.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+    s.bytes().all(|b| match b {
+        b'0'..=b'9' | b'a'..=b'f' => true,
+        _ => false,
+    })
 }
 
 // Matches any cargo registry source path of the form:
@@ -486,16 +492,24 @@ fn normalize_cargo_registry(
     normalization: Normalization,
 ) -> bool {
     let prefix = "/registry/src/";
-    let Some(pos) = line.find(prefix) else {
-        return false;
+    let pos = match line.find(prefix) {
+        Some(pos) => pos,
+        _ => return false,
     };
     let rest = &line[pos + prefix.len()..];
-    let Some(slash) = rest.find('/') else {
-        return false;
+    let slash = match rest.find('/') {
+        Some(slash) => slash,
+        _ => return false,
     };
     let segment = &rest[..slash];
-    let Some((registry, hash)) = segment.rsplit_once('-') else {
-        return false;
+    let mut segment = segment.rsplitn(2, '-');
+    let registry = match segment.next() {
+        Some(registry) => registry,
+        _ => return false,
+    };
+    let hash = match segment.next() {
+        Some(hash) => hash,
+        _ => return false,
     };
     if !((normalization >= CustomRegistry
         || registry == "github.com"
@@ -607,8 +621,9 @@ fn unindent(diag: String, normalization: Normalization) -> String {
         }
 
         let mut ahead = lines.clone();
-        let Some(next_line) = ahead.next() else {
-            continue;
+        let next_line = match ahead.next() {
+            Some(line) => line,
+            None => continue,
         };
 
         if let IndentedLineKind::Code(indent) =
@@ -693,7 +708,7 @@ fn indented_line_kind(
     }
 
     let is_space = |b: &u8| *b == b' ';
-    if let Some(rest) = line.strip_prefix("... ") {
+    if let Some(rest) = crate::strip_prefix(line, "... ") {
         let spaces = rest.bytes().take_while(is_space).count();
         return IndentedLineKind::Code(spaces);
     }
