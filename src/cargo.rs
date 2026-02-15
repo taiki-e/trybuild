@@ -107,7 +107,8 @@ pub(crate) fn build_dependencies(project: &mut Project) -> Result<()> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
-        .is_ok_and(|status| status.success());
+        .map(|status| status.success())
+        .unwrap_or(false);
 
     Ok(())
 }

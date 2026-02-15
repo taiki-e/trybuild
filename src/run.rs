@@ -252,15 +252,16 @@ impl Runner {
 
         let mut targets = source_manifest.target;
         for target in targets.values_mut() {
-            let dev_dependencies = mem::take(&mut target.dev_dependencies);
+            let dev_dependencies = mem::replace(&mut target.dev_dependencies, Default::default());
             target.dependencies.extend(dev_dependencies);
         }
 
         let mut features = source_manifest.features;
         for (feature, enables) in &mut features {
             enables.retain(|en| {
-                let Some(dep_name) = en.strip_prefix("dep:") else {
-                    return false;
+                let dep_name = match crate::strip_prefix(en, "dep:") {
+                    Some(dep_name) => dep_name,
+                    None => return false,
                 };
                 if let Some(Dependency { optional: true, .. }) = dependencies.get(dep_name) {
                     return true;
@@ -608,8 +609,9 @@ fn parse_cargo_json(
     let mut remaining = &*String::from_utf8_lossy(stdout);
     let mut seen = Set::new();
     while !remaining.is_empty() {
-        let Some(begin) = remaining.find("{\"reason\":") else {
-            break;
+        let begin = match remaining.find("{\"reason\":") {
+            Some(begin) => begin,
+            None => break,
         };
         let (nonmessage, rest) = remaining.split_at(begin);
         nonmessage_stdout.push_str(nonmessage);
@@ -629,8 +631,9 @@ fn parse_cargo_json(
         if let Ok(de) = serde_json::from_str::<CargoMessage>(message) {
             if de.message.level != "failure-note" {
                 let src_path = CanonicalPath::new(&de.target.src_path);
-                let Some((name, test)) = path_map.get(&src_path) else {
-                    continue;
+                let (name, test) = match path_map.get(&src_path) {
+                    Some((name, test)) => (name, test),
+                    _ => continue,
                 };
                 let entry = map.entry(src_path).or_insert_with(Stderr::default);
                 if de.message.level == "error" {

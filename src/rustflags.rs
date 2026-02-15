@@ -53,11 +53,14 @@ pub(crate) fn set(cmd: &mut Command, target: &str, extra_rustflags: &[&'static s
             Some(val) => (RUSTFLAGS, RUSTFLAGS_SEP, val),
             None => {
                 let rustflags = toml::Value::try_from(rustflags.clone()).unwrap();
-                cmd.arg(format!("--config=target.{target}.rustflags={rustflags}"));
+                cmd.arg(format!(
+                    "--config=target.{}.rustflags={}",
+                    target, rustflags
+                ));
                 match env::var_os(CARGO_BUILD_RUSTFLAGS) {
                     Some(val) => (CARGO_BUILD_RUSTFLAGS, RUSTFLAGS_SEP, val),
                     None => {
-                        cmd.arg(format!("--config=build.rustflags={rustflags}"));
+                        cmd.arg(format!("--config=build.rustflags={}", rustflags));
                         return;
                     }
                 }
