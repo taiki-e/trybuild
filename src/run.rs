@@ -135,16 +135,17 @@ impl Runner {
         let mut collect_path_dependencies =
             |dependencies: &Map<String, Dependency>, normalization: Normalization| {
                 for (name, dep) in dependencies {
-                    if let Some(path) = &dep.path
-                    // Skip path dependencies coming from the workspace itself
-                    && !packages.iter().any(|p| &p.name == name)
-                    && let Ok(normalized_path) = path.canonicalize()
-                    {
-                        path_dependencies.push(PathDependency {
-                            name: name.clone(),
-                            normalized_path,
-                            normalization,
-                        });
+                    if let Some(path) = &dep.path {
+                        // Skip path dependencies coming from the workspace itself
+                        if !packages.iter().any(|p| &p.name == name) {
+                            if let Ok(normalized_path) = path.canonicalize() {
+                                path_dependencies.push(PathDependency {
+                                    name: name.clone(),
+                                    normalized_path,
+                                    normalization,
+                                });
+                            }
+                        }
                     }
                 }
             };
